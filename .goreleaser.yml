@@ -1,0 +1,98 @@
+project_name: gmachine
+
+builds:
+  - binary: gmachine
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+      -s -w -X github.com/joemiller/gmachine/cmd.version={{.Version}}+{{.ShortCommit}}
+    goos:
+      - linux
+      - darwin
+      # - windows
+      - freebsd
+      - openbsd
+      # - dragonfly
+      # - netbsd
+    goarch:
+      - 386
+      - amd64
+      # - arm
+      # - arm64
+    goarm:
+      - ""
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: 386
+
+archives:
+  # binary-only releases - all platforms
+  - id: binaries
+    format: binary
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+  # archive releases containing: binary, readme, and license. tarballs (macos, linux), zip (windows)
+  - id: archives
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    replacements:
+      386: i386
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "skip ci"
+      - "ci skip"
+      - Merge pull request
+      - Merge branch
+
+brews:
+  - ids:
+      - archives
+    tap:
+      owner: joemiller
+      name: homebrew-taps
+    commit_author:
+      name: joe miller
+      email: gmachine@joemiller.me
+    folder: Formula
+    homepage: "https://github.com/joemiller/gmachine"
+    description: "Manage cloud machines on Google Cloud Platform"
+
+## generate RPM and DEB packages
+nfpms:
+  - id: gmachine
+    vendor: "Joe Miller"
+    homepage: "https://github.com/joemiller/gmachine"
+    maintainer: "gmachine@joemiller.me"
+    description: "Manage cloud machines on Google Cloud Platform"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    overrides:
+      rpm:
+        file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Arch }}"
+        replacements:
+          amd64: x86_64
+          386: i686
+          arm: armhfp
+          arm64: aarch64
+      deb:
+        file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+        replacements:
+          386: i386
+          arm: armel
