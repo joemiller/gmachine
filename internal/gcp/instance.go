@@ -2,9 +2,12 @@ package gcp
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
+
+	"google.golang.org/api/compute/v1"
 )
 
 // CreateRequest represents a configuration for creating a new instance with the
@@ -187,4 +190,27 @@ func PrintIP(log, logerr io.Writer, name, project, zone string) error {
 		"--format=get(networkInterfaces[0].accessConfigs[0].natIP)",
 	}
 	return run(nil, log, logerr, args...)
+}
+
+// TODO doc
+func DescribeInstance(name, project, zone string) (compute.Instance, error) {
+	var instance compute.Instance
+
+	args := []string{"gcloud", "beta", "compute", "instances", "describe",
+		name,
+		"--project=" + project,
+		"--zone=" + zone,
+		"--format=json",
+	}
+	b, err := output(args...)
+	if err != nil {
+		return instance, fmt.Errorf("(%s) %s", err, b)
+	}
+
+	err = json.Unmarshal(b, &instance)
+	if err != nil {
+		return instance, err
+	}
+
+	return instance, nil
 }

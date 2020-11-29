@@ -92,6 +92,8 @@ func (c *config) Get(name string) (machine, error) {
 	return machine{}, errors.New("machine not found")
 }
 
+// TODO make a thread-safe getter for config.Machines
+
 // TODO document
 func (c *config) Add(name, project, zone string, csek gcp.CSEKBundle) error {
 	// fail if already exists

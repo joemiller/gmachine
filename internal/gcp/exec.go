@@ -27,3 +27,7 @@ var execve = func(args []string) error {
 	// TODO: refactor? I think we're expected to use the unix pkg from x/sys instead of syscall. https://godoc.org/golang.org/x/sys/unix#Exec
 	return syscall.Exec(path, args, os.Environ())
 }
+
+var output = func(args ...string) ([]byte, error) {
+	return exec.Command(args[0], args[1:]...).CombinedOutput()
+}
