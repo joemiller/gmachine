@@ -35,12 +35,12 @@ func newConfig() *config {
 // TODO document
 func LoadFile(file string) (*config, error) {
 	cfg := newConfig()
-	cfg.filename = file
 
 	path, err := homedir.Expand(file)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing config file path %s: %w", file, err)
 	}
+	cfg.filename = path
 
 	// no config file yet, return an empty config{}
 	if !fileExists(path) {
