@@ -47,7 +47,7 @@ func status(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	machines := []string{} // TODO better var name, maybe even 'names'
+	names := []string{}
 	if !all {
 		name := cfg.GetDefault()
 		if len(args) > 0 {
@@ -56,10 +56,10 @@ func status(cmd *cobra.Command, args []string) error {
 		if name == "" {
 			return errors.New("Must specify machine or set a default machine with 'set-default'")
 		}
-		machines = append(machines, name)
+		names = append(names, name)
 	} else {
 		for _, m := range cfg.Machines {
-			machines = append(machines, m.Name)
+			names = append(names, m.Name)
 		}
 	}
 
@@ -68,10 +68,10 @@ func status(cmd *cobra.Command, args []string) error {
 	print := func(values ...string) {
 		fmt.Fprintln(table, strings.Join(values, "\t"))
 	}
-	print("NAME", "ZONE", "PROJECT", "MACHINE_TYPE", "PREEMPTIBLE", "INTERNAL_IP", "EXTERNAL_IP", "STATUS")
+	print("NAME", "ZONE", "PROJECT", "MACHINE_TYPE", "PREEMPTIBLE", "INTERNAL_IP", "EXTERNAL_IP", "STATUS", "DEFAULT")
 
-	// describe each
-	for _, name := range machines {
+	// status row for each
+	for _, name := range names {
 		machine, err := cfg.Get(name)
 		if err != nil {
 			return err
@@ -91,6 +91,7 @@ func status(cmd *cobra.Command, args []string) error {
 			internalIP(meta.NetworkInterfaces),
 			externalIP(meta.NetworkInterfaces),
 			meta.Status,
+			defaultStr(cfg.GetDefault(), name),
 		)
 
 	}
@@ -99,19 +100,9 @@ func status(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// instances = []
-	// for i in cfg.Machines
-	//   m, err = gcp.Describe(i)
-	//   instances = append(m)
-	//
-	// print table header
-	// for i in instances
-	//    print table row, instance data
-	//
-	// TODO: fanout 'describe' calls to limited size worker pool
+	// TODO: fanout 'describe' calls to a limited size worker pool
 	//       fanin results to table printer.. maybe vault-token-helper has a reusable pattern
 
-	// return gcp.StatusInstance(cmd.OutOrStdout(), cmd.OutOrStderr(), name, machine.Project, machine.Zone)
 	return nil
 }
 
@@ -130,9 +121,15 @@ func externalIP(interfaces []*compute.NetworkInterface) string {
 	if len(interfaces) == 0 {
 		return ""
 	}
-	// iface := interfaces[0]
 	if len(interfaces[0].AccessConfigs) == 0 {
 		return ""
 	}
 	return interfaces[0].AccessConfigs[0].NatIP
+}
+
+func defaultStr(def, name string) string {
+	if def == name {
+		return "*"
+	}
+	return ""
 }
