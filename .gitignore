@@ -2,3 +2,5 @@ gmachine
 vendor/
 Attic
 cover.out
+dist/
+.Attic
