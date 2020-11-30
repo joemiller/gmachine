@@ -147,8 +147,7 @@ func create(cmd *cobra.Command, args []string) error {
 	}
 
 	if setAsDefault {
-		err = cfg.SetDefault(name)
-		if err != nil {
+		if err = cfg.SetDefault(name); err != nil {
 			return err
 		}
 	}
