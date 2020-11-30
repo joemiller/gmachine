@@ -39,3 +39,5 @@ func list(cmd *cobra.Command, args []string) error {
 	}
 	return nil
 }
+
+// TODO: maybe remove the list command since 'status' is similar?
