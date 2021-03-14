@@ -19,7 +19,7 @@ var createCmd = &cobra.Command{
 # Create a new machine 'machine1' in the 'my-proj' project, zone 'us-west1-a'
 gmachine create machine1 -p my-proj -z us-west1-a
 
-# Encrypt the machine's root disk using a locally stored CSEK key
+# Encrypt the machine's root disk using a locally stored CSEK key. A new key is generated automatically.
 gmachine create machine1 -p my-proj -z us-west1-a --csek
 
 # List all options
