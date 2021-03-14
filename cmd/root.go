@@ -3,12 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-const defaultConfigFile = "~/.gmachine.yaml"
 
 var (
 	version = "development"
@@ -41,14 +40,17 @@ func Execute() {
 
 func init() {
 	viper.AutomaticEnv()
-	// config file location, order of preference: flag > environment > default
+	// config file location, order of preference: (1) -config flag > (2) environment > (3) default config dir
 
-	cfgFile = defaultConfigFile
+	// Default config dir depends on the platform: https://golang.org/pkg/os/#UserConfigDir
+	cfgDir, _ := os.UserConfigDir()
+	cfgFile = filepath.Join(cfgDir, "gmachine", "gmachine.yaml")
+
 	if v := viper.GetString("GMACHINE_CONFIG"); v != "" {
 		cfgFile = v
 	}
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", cfgFile, fmt.Sprintf("config file (default is %s)", defaultConfigFile))
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", cfgFile, "Config file")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 
 	rootCmd.AddCommand(versionCmd)

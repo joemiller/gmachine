@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"sync"
 
 	"github.com/joemiller/gmachine/internal/gcp"
@@ -47,7 +48,7 @@ func LoadFile(file string) (*config, error) {
 		return cfg, nil
 	}
 
-	// nsure the file is writable
+	// ensure the file is writable
 	if !writable(path) {
 		return cfg, fmt.Errorf("config file %s is not writable", path)
 	}
@@ -172,11 +173,17 @@ func (c *config) Count() int {
 }
 
 // save persist the control cluster cache to a file in JSON format
+// If the directory containing the file does not exist it will be created.
 func (c *config) save() error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	yamlBytes, err := yaml.Marshal(c)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(path.Dir(c.filename), 0700)
 	if err != nil {
 		return err
 	}
