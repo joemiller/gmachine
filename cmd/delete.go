@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/joemiller/gmachine/internal/config"
 	"github.com/joemiller/gmachine/internal/gcp"
 	"github.com/joemiller/gmachine/internal/indentor"
@@ -15,6 +17,9 @@ var deleteCmd = &cobra.Command{
 	Example: indentor.Indent("  ", `
 # delete the machine named 'machine1'
 gcloud delete machine1
+
+# force deletion on errors such as 'machine not found'. This will remove the machine from the config file.
+gcloud delete machine1 -f
 `),
 	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
@@ -45,16 +50,11 @@ func delete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cmd.Println("Deleting...")
+	cmd.Printf("Deleting %s...\n", machine.Name)
 
 	err = gcp.DeleteInstance(cmd.OutOrStdout(), cmd.OutOrStderr(), machine.Name, machine.Project, machine.Zone)
-	if err != nil {
-		if force {
-			if err := cfg.Delete(name); err != nil {
-				return err
-			}
-		}
-		return err
+	if err != nil && !force {
+		return fmt.Errorf("Delete failed: %v. (re-run with '-f' to delete %s from the config file)", err, machine.Name)
 	}
 
 	// remove machine from config file
