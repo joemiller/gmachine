@@ -41,7 +41,7 @@ func init() {
 	createCmd.Flags().Bool("csek", false, "Encrypt the boot disk with a customer-supplied-encryption-key. A key will be generated and stored in the local config file")
 	createCmd.Flags().String("machine-type", "f1-micro", "Specifies the machine type used for the instances. To get a list of available machine types, run 'gcloud compute machine-types list'")
 	createCmd.Flags().Bool("disable-ssh-project-keys", true, "Disable automatically adding project SSH key users to the instance")
-	createCmd.Flags().Bool("set-default", false, "Set this instance as the default. The first instance will always be set as default")
+	createCmd.Flags().Bool("set-default", false, "Set this instance as the default. The first created instance will always be set as default")
 	createCmd.Flags().Bool("no-service-account", false, "Create instance without service account")
 	createCmd.Flags().Bool("create-service-account", false, "Create a new service account for the instance. The name of the instance will be used unless --service-account is specified")
 	createCmd.Flags().String("service-account", "", "A service account email address to associate with the instance")
