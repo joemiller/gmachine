@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/joemiller/gmachine/internal/config"
 	"github.com/joemiller/gmachine/internal/gcp"
@@ -36,18 +37,25 @@ func init() {
 	createCmd.Flags().String("disk-size", "10GB", "Size of the boot disk. Valid units: KB, MB, GB, TB")
 	createCmd.Flags().String("disk-type", "pd-standard", "The type of the boot disk. Run 'gcloud compute disk-types list' for valid types")
 	createCmd.Flags().String("image-project", "ubuntu-os-cloud", "The Google Cloud project against which all image and image family references will be resolved")
-	createCmd.Flags().String("image-family", "ubuntu-2010", "The image family for the operating system that the boot disk will be initialized with")
+	createCmd.Flags().String("image-family", "ubuntu-2204-lts", "The image family for the operating system that the boot disk will be initialized with")
 	createCmd.Flags().Bool("csek", false, "Encrypt the boot disk with a customer-supplied-encryption-key. A key will be generated and stored in the local config file")
 	createCmd.Flags().String("machine-type", "f1-micro", "Specifies the machine type used for the instances. To get a list of available machine types, run 'gcloud compute machine-types list'")
 	createCmd.Flags().Bool("disable-ssh-project-keys", true, "Disable automatically adding project SSH key users to the instance")
 	createCmd.Flags().Bool("set-default", false, "Set this instance as the default. The first instance will always be set as default")
+	createCmd.Flags().Bool("no-service-account", false, "Create instance without service account")
+	createCmd.Flags().Bool("create-service-account", false, "Create a new service account for the instance. The name of the instance will be used unless --service-account is specified")
+	createCmd.Flags().String("service-account", "", "A service account email address to associate with the instance")
 
 	// TODO: there are so many more options that we might support over time, some examples:
 	//   * --image (if specified, --image-family can't be used)
-	//   * --service-account
 	//   * --startup-script / --startup-script-url
 	//   * --network / --subnet
 	//   * --preemptible
+	// GSA:
+	//   * --no-service-account
+	//   * --use-default-service-account (don't set the flag at all, let GCP use the default GSA for compute in the project)
+	//   * --service-account <EXISTING> or maybe just this flag and create if it doesn't exist
+	//   * --create-service-account <NAME>
 
 	rootCmd.AddCommand(createCmd)
 }
@@ -95,9 +103,34 @@ func create(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	noServiceAccount, err := cmd.Flags().GetBool("no-service-account")
+	if err != nil {
+		return err
+	}
+	createServiceAccount, err := cmd.Flags().GetBool("create-service-account")
+	if err != nil {
+		return err
+	}
+	serviceAccount, err := cmd.Flags().GetString("service-account")
+	if err != nil {
+		return err
+	}
 
+	// validators
+	if noServiceAccount && serviceAccount != "" {
+		return errors.New("cannot specify both --no-service-account and --service-account")
+	}
+	if noServiceAccount && createServiceAccount {
+		return errors.New("cannot specify both --no-service-account and --create-service-account")
+	}
 	if name == "" || project == "" || zone == "" {
 		return errors.New("Missing required arguments: name, project, zone. Use -h for help.")
+	}
+
+	// setup service account for the instance
+	serviceAccountName := name // default to instance name
+	if serviceAccount != "" {
+		serviceAccountName = serviceAccount
 	}
 
 	cfg, err := config.LoadFile(cfgFile)
@@ -110,6 +143,8 @@ func create(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("machine '%s' already exists in the config file", name)
 	}
 
+	log.Println("TODO: create service account if --create-service-account is specified")
+
 	// generate new csek key if requested
 	var csekBundle gcp.CSEKBundle
 	if encrypt {
@@ -120,15 +155,17 @@ func create(cmd *cobra.Command, args []string) error {
 	}
 
 	req := gcp.CreateRequest{
-		Name:         name,
-		Project:      project,
-		Zone:         zone,
-		MachineType:  machineType,
-		BootDiskSize: diskSize,
-		BootDiskType: diskType,
-		ImageProject: imageProject,
-		ImageFamily:  imageFamily,
-		CSEK:         csekBundle,
+		Name:             name,
+		Project:          project,
+		Zone:             zone,
+		MachineType:      machineType,
+		BootDiskSize:     diskSize,
+		BootDiskType:     diskType,
+		ImageProject:     imageProject,
+		ImageFamily:      imageFamily,
+		CSEK:             csekBundle,
+		ServiceAccount:   serviceAccountName,
+		NoServiceAccount: noServiceAccount,
 	}
 	if disableProjectSSHKeys {
 		req.AddMetadata("block-project-ssh-keys", "true")

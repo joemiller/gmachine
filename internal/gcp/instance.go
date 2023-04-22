@@ -13,16 +13,18 @@ import (
 // CreateRequest represents a configuration for creating a new instance with the
 // CreateInstance() func.
 type CreateRequest struct {
-	Name         string
-	Project      string
-	Zone         string
-	MachineType  string
-	BootDiskSize string
-	BootDiskType string
-	ImageProject string
-	ImageFamily  string
-	Metadata     map[string]string
-	CSEK         CSEKBundle
+	Name             string
+	Project          string
+	Zone             string
+	MachineType      string
+	BootDiskSize     string
+	BootDiskType     string
+	ImageProject     string
+	ImageFamily      string
+	Metadata         map[string]string
+	CSEK             CSEKBundle
+	ServiceAccount   string
+	NoServiceAccount bool
 }
 
 // AddMetadata adds a key=value pair to the instance's metadata.
@@ -37,7 +39,8 @@ func (r *CreateRequest) AddMetadata(key, val string) {
 func CreateInstance(log, logerr io.Writer, req CreateRequest) error {
 	var err error
 
-	args := []string{"gcloud", "beta", "compute", "instances", "create",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "create",
 		req.Name,
 		"--project=" + req.Project,
 		"--zone=" + req.Zone,
@@ -46,6 +49,13 @@ func CreateInstance(log, logerr io.Writer, req CreateRequest) error {
 		"--boot-disk-type=" + req.BootDiskType,
 		"--image-project=" + req.ImageProject,
 		"--image-family=" + req.ImageFamily,
+	}
+
+	if req.NoServiceAccount == false && req.ServiceAccount != "" {
+		args = append(args, "--service-account="+req.ServiceAccount)
+	}
+	if req.NoServiceAccount {
+		args = append(args, "--no-service-account", "--no-scopes")
 	}
 
 	// [--metadata=KEY=VALUE,[KEY=VALUE,...]]
@@ -72,7 +82,8 @@ func CreateInstance(log, logerr io.Writer, req CreateRequest) error {
 
 // TODO doc
 func DeleteInstance(log, logerr io.Writer, name, project, zone string) error {
-	args := []string{"gcloud", "compute", "instances", "delete",
+	args := []string{
+		"gcloud", "compute", "instances", "delete",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -82,18 +93,26 @@ func DeleteInstance(log, logerr io.Writer, name, project, zone string) error {
 }
 
 // TODO doc
-func SSHInstance(name, project, zone string) error {
-	args := []string{"gcloud", "compute", "ssh",
+// TODO support more gcloud-ssh flags like iap-tunnel. maybe make this a struct like SSHInput{}
+func SSHInstance(name, project, zone string, extra string) error {
+	args := []string{
+		"gcloud", "compute", "ssh",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
+	}
+	if extra != "" {
+		f := strings.Fields(extra)
+		args = append(args, "--")
+		args = append(args, f...)
 	}
 	return execve(args)
 }
 
 // TODO doc
 func StopInstance(log, logerr io.Writer, name, project, zone string) error {
-	args := []string{"gcloud", "compute", "instances", "stop",
+	args := []string{
+		"gcloud", "compute", "instances", "stop",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -106,7 +125,8 @@ func StartInstance(log, logerr io.Writer, name, project, zone string, csek CSEKB
 	var err error
 	var stdin []byte
 
-	args := []string{"gcloud", "beta", "compute", "instances", "start",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "start",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -126,7 +146,8 @@ func StartInstance(log, logerr io.Writer, name, project, zone string, csek CSEKB
 
 // TODO doc
 func SuspendInstance(log, logerr io.Writer, name, project, zone string) error {
-	args := []string{"gcloud", "beta", "compute", "instances", "suspend",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "suspend",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -139,7 +160,8 @@ func ResumeInstance(log, logerr io.Writer, name, project, zone string, csek CSEK
 	var err error
 	var stdin []byte
 
-	args := []string{"gcloud", "beta", "compute", "instances", "resume",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "resume",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -172,7 +194,8 @@ table(
 
 // TODO doc
 func StatusInstance(log, logerr io.Writer, name, project, zone string) error {
-	args := []string{"gcloud", "beta", "compute", "instances", "describe",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "describe",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -183,7 +206,8 @@ func StatusInstance(log, logerr io.Writer, name, project, zone string) error {
 
 // TODO doc
 func PrintIP(log, logerr io.Writer, name, project, zone string) error {
-	args := []string{"gcloud", "beta", "compute", "instances", "describe",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "describe",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -196,7 +220,8 @@ func PrintIP(log, logerr io.Writer, name, project, zone string) error {
 func DescribeInstance(name, project, zone string) (compute.Instance, error) {
 	var instance compute.Instance
 
-	args := []string{"gcloud", "beta", "compute", "instances", "describe",
+	args := []string{
+		"gcloud", "beta", "compute", "instances", "describe",
 		name,
 		"--project=" + project,
 		"--zone=" + zone,
@@ -213,4 +238,16 @@ func DescribeInstance(name, project, zone string) (compute.Instance, error) {
 	}
 
 	return instance, nil
+}
+
+// TODO doc
+func ResizeInstance(log, logerr io.Writer, name, project, zone, size string) error {
+	args := []string{
+		"gcloud", "compute", "instances", "set-machine-type",
+		name,
+		"--project=" + project,
+		"--zone=" + zone,
+		"--machine-type=" + size,
+	}
+	return run(nil, log, logerr, args...)
 }

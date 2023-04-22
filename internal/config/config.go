@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"sync"
@@ -15,18 +14,21 @@ import (
 )
 
 type config struct {
-	Version  int       `mapstructure:"version"`
-	Default  string    `mapstructure:"default"`
-	Machines []machine `mapstructure:"machines"`
+	Version  int       `yaml:"version"`
+	Default  string    `yaml:"default"`
+	Machines []machine `yaml:"machines"`
 	filename string
 	mu       sync.RWMutex
 }
 
 type machine struct {
-	Name    string         `mapstructure:"name"`
-	Project string         `mapstructure:"project"`
-	Zone    string         `mapstructure:"zone"`
-	CSEK    gcp.CSEKBundle `mapstructure:"csek"`
+	Name    string         `yaml:"name"`
+	Project string         `yaml:"project"`
+	Zone    string         `yaml:"zone"`
+	CSEK    gcp.CSEKBundle `yaml:"csek"`
+	// TODO provide a way to set default ssh args for a machine. Currently requires manual edit of config file
+	DefaultSSHArgs string `yaml:"default_ssh_args"`
+	ServiceAccount string `yaml:"service_account"`
 }
 
 func newConfig() *config {
@@ -53,7 +55,7 @@ func LoadFile(file string) (*config, error) {
 		return cfg, fmt.Errorf("config file %s is not writable", path)
 	}
 
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %w", path, err)
 	}
@@ -112,6 +114,7 @@ func (c *config) Add(name, project, zone string, csek gcp.CSEKBundle) error {
 		Project: project,
 		Zone:    zone,
 		CSEK:    csek,
+		// TODO service account, default ssh args
 	}
 	c.mu.Lock()
 	c.Machines = append(c.Machines, m)
@@ -183,12 +186,12 @@ func (c *config) save() error {
 		return err
 	}
 
-	err = os.MkdirAll(path.Dir(c.filename), 0700)
+	err = os.MkdirAll(path.Dir(c.filename), 0o700)
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(c.filename, yamlBytes, 0600)
+	return os.WriteFile(c.filename, yamlBytes, 0o600)
 }
 
 // fileExists checks if a file exists and is not a directory before we

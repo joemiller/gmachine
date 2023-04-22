@@ -15,6 +15,9 @@ var run = func(stdin io.Reader, stdout, stderr io.Writer, args ...string) error 
 	exe.Stdout = stdout
 	exe.Stderr = stderr
 	exe.Stdin = stdin
+	env := os.Environ()
+	env = append(env, "PYTHONUNBUFFERED=1")
+	exe.Env = env
 	return exe.Run()
 }
 

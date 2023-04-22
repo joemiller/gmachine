@@ -27,6 +27,9 @@ gmachine ssh machine2
 
 func init() {
 	rootCmd.AddCommand(sshCmd)
+
+	sshCmd.Flags().String("ssh-args", "", "Additional ssh args to pass to ssh (example '-A -C'). Overrides default_ssh_args from config file if set.'")
+	sshCmd.Flags().BoolP("agent-forward", "A", false, "Enable SSH Agent forwarding")
 }
 
 func ssh(cmd *cobra.Command, args []string) error {
@@ -48,5 +51,14 @@ func ssh(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return gcp.SSHInstance(name, machine.Project, machine.Zone)
+	sshArgs := machine.DefaultSSHArgs
+	if args, err := cmd.Flags().GetString("ssh-args"); err == nil && args != "" {
+		sshArgs = args
+	}
+
+	if forward, _ := cmd.Flags().GetBool("agent-forward"); forward {
+		sshArgs = sshArgs + " -A"
+	}
+
+	return gcp.SSHInstance(name, machine.Project, machine.Zone, sshArgs)
 }

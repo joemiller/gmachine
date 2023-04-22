@@ -16,7 +16,7 @@ cov: test
 	@go tool cover -html=cover.out
 
 build:
-	@go build .
+	@go build -trimpath -v .
 
 release:
 	@goreleaser $(GORELEASER_ARGS)

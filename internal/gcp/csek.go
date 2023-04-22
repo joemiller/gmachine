@@ -33,7 +33,7 @@ type CSEKKey struct {
 	KeyType string `json:"key-type" yaml:"key-type"`
 }
 
-// Create generates a CSEKBundle for the resource specified by 'uri'.
+// CreateCSEK generates a CSEKBundle for the resource specified by 'uri'.
 // Only key-type 'raw' is currently supported
 func CreateCSEK(uri string) (CSEKBundle, error) {
 	var bundle CSEKBundle
