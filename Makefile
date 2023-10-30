@@ -9,7 +9,7 @@ lint:
 		echo "goreleaser not installed, skiping goreleaser linting"; \
 	fi
 
-test: lint
+test:
 	@go test -race -coverprofile=cover.out -v ./...
 
 cov: test
