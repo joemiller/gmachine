@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"google.golang.org/api/compute/v1"
@@ -51,7 +52,7 @@ func CreateInstance(log, logerr io.Writer, req CreateRequest) error {
 		"--image-family=" + req.ImageFamily,
 	}
 
-	if req.NoServiceAccount == false && req.ServiceAccount != "" {
+	if !req.NoServiceAccount && req.ServiceAccount != "" {
 		args = append(args, "--service-account="+req.ServiceAccount)
 	}
 	if req.NoServiceAccount {
@@ -141,7 +142,8 @@ func StartInstance(log, logerr io.Writer, name, project, zone string, csek CSEKB
 		args = append(args, "--csek-key-file=-")
 	}
 
-	return run(bytes.NewReader(stdin), log, logerr, args...)
+	// return run(bytes.NewReader(stdin), log, logerr, args...)
+	return run(bytes.NewReader(stdin), os.Stdout, os.Stderr, args...)
 }
 
 // TODO doc
@@ -201,7 +203,7 @@ func StatusInstance(log, logerr io.Writer, name, project, zone string) error {
 		"--zone=" + zone,
 		"--format=" + statusTable,
 	}
-	return run(nil, log, logerr, args...)
+	return run(os.Stdin, log, logerr, args...)
 }
 
 // TODO doc
@@ -249,5 +251,5 @@ func ResizeInstance(log, logerr io.Writer, name, project, zone, size string) err
 		"--zone=" + zone,
 		"--machine-type=" + size,
 	}
-	return run(nil, log, logerr, args...)
+	return run(os.Stdin, log, logerr, args...)
 }

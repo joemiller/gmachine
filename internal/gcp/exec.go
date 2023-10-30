@@ -32,5 +32,9 @@ var execve = func(args []string) error {
 }
 
 var output = func(args ...string) ([]byte, error) {
-	return exec.Command(args[0], args[1:]...).CombinedOutput()
+	exe := exec.Command(args[0], args[1:]...)
+	// pass thru stdin and stderr so that re-authentication prompts work
+	exe.Stdin = os.Stdin
+	exe.Stderr = os.Stderr
+	return exe.Output()
 }
