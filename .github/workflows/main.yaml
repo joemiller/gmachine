@@ -1,5 +1,8 @@
 name: main
-on: [push]
+on:
+  push:
+    tags-ignore:
+      - '*'
 
 # TODO: break this up into separate workflows for a more idiomatic GHA setup. anything that is doing "if branch" is a candidate
 
