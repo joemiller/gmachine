@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/joemiller/gmachine/internal/config"
 	"github.com/joemiller/gmachine/internal/gcp"
@@ -32,6 +31,7 @@ gmachine create -h
 }
 
 func init() {
+	createCmd.Flags().StringP("account", "a", "", "The Google Cloud account to create the instance in. If not set the gcloud cli default account is used")
 	createCmd.Flags().StringP("project", "p", "", "The Google Cloud project to create the instance in")
 	createCmd.Flags().StringP("zone", "z", "", "The Google Cloud zone to create the instance in")
 	createCmd.Flags().String("disk-size", "10GB", "Size of the boot disk. Valid units: KB, MB, GB, TB")
@@ -42,8 +42,10 @@ func init() {
 	createCmd.Flags().String("machine-type", "f1-micro", "Specifies the machine type used for the instances. To get a list of available machine types, run 'gcloud compute machine-types list'")
 	createCmd.Flags().Bool("disable-ssh-project-keys", true, "Disable automatically adding project SSH key users to the instance")
 	createCmd.Flags().Bool("set-default", false, "Set this instance as the default. The first created instance will always be set as default")
+
+	// GSA related flags:
 	createCmd.Flags().Bool("no-service-account", false, "Create instance without service account")
-	createCmd.Flags().Bool("create-service-account", false, "Create a new service account for the instance. The name of the instance will be used unless --service-account is specified")
+	createCmd.Flags().Bool("create-service-account", false, "Create a new service account for the instance. The name of the instance will be used. The instance name must be between 6 and 30 chars")
 	createCmd.Flags().String("service-account", "", "A service account email address to associate with the instance")
 
 	// TODO: there are so many more options that we might support over time, some examples:
@@ -51,18 +53,17 @@ func init() {
 	//   * --startup-script / --startup-script-url
 	//   * --network / --subnet
 	//   * --preemptible
-	// GSA:
-	//   * --no-service-account
-	//   * --use-default-service-account (don't set the flag at all, let GCP use the default GSA for compute in the project)
-	//   * --service-account <EXISTING> or maybe just this flag and create if it doesn't exist
-	//   * --create-service-account <NAME>
-
+	//
 	rootCmd.AddCommand(createCmd)
 }
 
 func create(cmd *cobra.Command, args []string) error {
 	name := args[0] // guaranteed not nil due to cobra.ExactArgs(1)
 
+	account, err := cmd.Flags().GetString("account")
+	if err != nil {
+		return err
+	}
 	project, err := cmd.Flags().GetString("project")
 	if err != nil {
 		return err
@@ -124,13 +125,45 @@ func create(cmd *cobra.Command, args []string) error {
 		return errors.New("cannot specify both --no-service-account and --create-service-account")
 	}
 	if name == "" || project == "" || zone == "" {
-		return errors.New("Missing required arguments: name, project, zone. Use -h for help.")
+		return errors.New("missing required arguments: name, project, zone. Use -h for help.")
 	}
 
-	// setup service account for the instance
-	serviceAccountName := name // default to instance name
+	// lookup the currently configured GCP account if --account was not specified
+	if account == "" {
+		account, err = gcp.GetCurrentAccount()
+		if err != nil {
+			return err
+		}
+	}
+	// 1. gmachine create
+	//    creates a new instance using GCP compute default service account
+	//    runs `gcloud` without any GSA related flags
+
+	// 2. gmachine create --no-service-account
+	//    create vm without GSA
+	//    runs `gcloud` with --no-service-account and --no-scopes flags
+
+	// 3. gmachine create --service-account foo@project.iam.gserviceaccount.com
+	//    creates vm using an existing service account
+	//    runs `gcloud` with --service-account flag (must use fully-qualified GSA name)
+
+	// 4. gmachine create --create-service-account
+	//    runs `gcloud` with --service-account flag (must use fully-qualified GSA name) uses GSA with same name as the instance
+
+	serviceAccountEmail := ""
 	if serviceAccount != "" {
-		serviceAccountName = serviceAccount
+		serviceAccountEmail = serviceAccount
+		// we could validate that the service account is a fully-qualified email address here, but the gcloud
+		// create command will fail and print an error to os.Stderr for the user anyway.
+	}
+
+	// --create-service-account creates a new service account using the name of the instance.
+	if createServiceAccount {
+		err = gcp.CreateServiceAccount(cmd.OutOrStdout(), cmd.OutOrStderr(), name, account, project)
+		if err != nil {
+			return fmt.Errorf("failed creating Service Account: %s", err)
+		}
+		serviceAccountEmail = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", name, project)
 	}
 
 	cfg, err := config.LoadFile(cfgFile)
@@ -143,19 +176,18 @@ func create(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("machine '%s' already exists in the config file", name)
 	}
 
-	log.Println("TODO: create service account if --create-service-account is specified")
-
 	// generate new csek key if requested
 	var csekBundle gcp.CSEKBundle
 	if encrypt {
 		csekBundle, err = gcp.CreateCSEK(gcp.DiskURI(project, zone, name))
 		if err != nil {
-			return fmt.Errorf("Failed generating CSEK Key: %w", err)
+			return fmt.Errorf("failed generating CSEK Key: %w", err)
 		}
 	}
 
 	req := gcp.CreateRequest{
 		Name:             name,
+		Account:          account,
 		Project:          project,
 		Zone:             zone,
 		MachineType:      machineType,
@@ -164,7 +196,7 @@ func create(cmd *cobra.Command, args []string) error {
 		ImageProject:     imageProject,
 		ImageFamily:      imageFamily,
 		CSEK:             csekBundle,
-		ServiceAccount:   serviceAccountName,
+		ServiceAccount:   serviceAccountEmail,
 		NoServiceAccount: noServiceAccount,
 	}
 	if disableProjectSSHKeys {
@@ -178,7 +210,7 @@ func create(cmd *cobra.Command, args []string) error {
 	}
 
 	// add machine to config file
-	err = cfg.Add(name, project, zone, csekBundle)
+	err = cfg.Add(name, account, project, zone, csekBundle)
 	if err != nil {
 		return err
 	}

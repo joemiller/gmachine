@@ -60,5 +60,10 @@ func ssh(cmd *cobra.Command, args []string) error {
 		sshArgs = sshArgs + " -A"
 	}
 
-	return gcp.SSHInstance(name, machine.Project, machine.Zone, sshArgs)
+	return gcp.SSHInstance(name,
+		machine.Account,
+		machine.Project,
+		machine.Zone,
+		sshArgs,
+	)
 }

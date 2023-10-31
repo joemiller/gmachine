@@ -48,5 +48,12 @@ func printIP(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return gcp.PrintIP(cmd.OutOrStdout(), cmd.OutOrStderr(), name, machine.Project, machine.Zone)
+	return gcp.PrintIP(
+		cmd.OutOrStdout(),
+		cmd.OutOrStderr(),
+		name,
+		machine.Account,
+		machine.Project,
+		machine.Zone,
+	)
 }

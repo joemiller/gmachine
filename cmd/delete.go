@@ -52,9 +52,16 @@ func delete(cmd *cobra.Command, args []string) error {
 
 	cmd.Printf("Deleting %s...\n", machine.Name)
 
-	err = gcp.DeleteInstance(cmd.OutOrStdout(), cmd.OutOrStderr(), machine.Name, machine.Project, machine.Zone)
+	err = gcp.DeleteInstance(
+		cmd.OutOrStdout(),
+		cmd.OutOrStderr(),
+		machine.Name,
+		machine.Account,
+		machine.Project,
+		machine.Zone,
+	)
 	if err != nil && !force {
-		return fmt.Errorf("Delete failed: %v. (re-run with '-f' to delete %s from the config file)", err, machine.Name)
+		return fmt.Errorf("delete failed: %v. (re-run with '-f' to delete %s from the config file)", err, machine.Name)
 	}
 
 	// remove machine from config file

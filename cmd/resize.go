@@ -55,7 +55,15 @@ func resize(cmd *cobra.Command, args []string) error {
 	}
 
 	cmd.Printf("Resizing %s to %s...\n", machine.Name, size)
-	err = gcp.ResizeInstance(cmd.OutOrStdout(), cmd.OutOrStderr(), machine.Name, machine.Project, machine.Zone, size)
+	err = gcp.ResizeInstance(
+		cmd.OutOrStdout(),
+		cmd.OutOrStderr(),
+		machine.Name,
+		machine.Account,
+		machine.Project,
+		machine.Zone,
+		size,
+	)
 	if err != nil {
 		return err
 	}
