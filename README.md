@@ -15,6 +15,12 @@ Name: .. gmachines :shrug: I couldn't think of a better name (yet).
 * macOS (Linuxbrew might work too): `brew install joemiller/taps/gmachine`
 * Binaries for all platforms (macOS, Linux, *BSD) on [GitHub Releases](https://github.com/joemiller/gmachine/releases)
 
+Or `go install`:
+
+```console
+go install github.com/joemiller/gmachine@latest
+```
+
 ## Configuration
 
 ### `gmachine.yaml` config file
