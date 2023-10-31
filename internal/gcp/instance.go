@@ -70,10 +70,13 @@ func CreateInstance(log, logerr io.Writer, req CreateRequest) error {
 			metadata = append(metadata, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
+	// --metadata=startup-script-url=URL
 	if req.StartupScriptURL != "" {
 		metadata = append(metadata, "startup-script-url="+req.StartupScriptURL)
 	}
-	args = append(args, "--metadata="+strings.Join(metadata, ","))
+	if len(metadata) > 0 {
+		args = append(args, "--metadata="+strings.Join(metadata, ","))
+	}
 
 	// startup-script-url uses `--metadata-from-file=``
 	if req.StartupScript != "" {
