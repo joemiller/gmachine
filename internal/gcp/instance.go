@@ -27,6 +27,8 @@ type CreateRequest struct {
 	CSEK             CSEKBundle
 	ServiceAccount   string
 	NoServiceAccount bool
+	StartupScript    string
+	StartupScriptURL string
 }
 
 // AddMetadata adds a key=value pair to the instance's metadata.
@@ -62,12 +64,20 @@ func CreateInstance(log, logerr io.Writer, req CreateRequest) error {
 	}
 
 	// [--metadata=KEY=VALUE,[KEY=VALUE,...]]
+	metadata := []string{}
 	if len(req.Metadata) > 0 {
-		pairs := []string{}
 		for k, v := range req.Metadata {
-			pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
+			metadata = append(metadata, fmt.Sprintf("%s=%s", k, v))
 		}
-		args = append(args, "--metadata="+strings.Join(pairs, ","))
+	}
+	if req.StartupScriptURL != "" {
+		metadata = append(metadata, "startup-script-url="+req.StartupScriptURL)
+	}
+	args = append(args, "--metadata="+strings.Join(metadata, ","))
+
+	// startup-script-url uses `--metadata-from-file=``
+	if req.StartupScript != "" {
+		args = append(args, "--metadata-from-file=startup-script="+req.StartupScript)
 	}
 
 	// marshal CSEK to json and pass into gcloud via stdin
