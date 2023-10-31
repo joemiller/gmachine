@@ -21,9 +21,9 @@ jobs:
       #   shell: bash # force windows to use git-bash for access to curl
       - uses: golangci/golangci-lint-action@v3
       - name: install goreleaser
-        # only need to lint goreleaser on one platform:
-        if: startsWith(runner.os, 'Linux')
-        run: curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sudo sh -s -- -b /usr/local/bin
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          install-only: true
       - run: make lint
         shell: bash
       - run: make test
@@ -41,7 +41,9 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: install goreleaser
-        run: curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sudo sh -s -- -b /usr/local/bin
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          install-only: true
       - run: make snapshot
 
   release:
@@ -58,7 +60,9 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: install goreleaser
-        run: curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sudo sh -s -- -b /usr/local/bin
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          install-only: true
       - name: run autotag to increment version
         run: |
           curl -sL https://git.io/autotag-install | sudo sh -s -- -b /usr/local/bin
