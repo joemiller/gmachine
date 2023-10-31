@@ -1,7 +1,7 @@
 package config_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -11,7 +11,7 @@ import (
 
 func tempFile(t *testing.T, contents string) string {
 	tmpfile := filepath.Join(t.TempDir(), "temp.yaml")
-	err := ioutil.WriteFile(tmpfile, []byte(contents), 0600)
+	err := os.WriteFile(tmpfile, []byte(contents), 0o600)
 	assert.NoError(t, err)
 	return tmpfile
 }
@@ -23,6 +23,7 @@ version: 1
 default: foo
 machines:
   - name: foo
+    account: my-account
     project: my-proj
     zone: us-central1-a
     csek:
@@ -41,6 +42,7 @@ machines:
 	// machines:
 	machine := cfg.Machines[0]
 	assert.Equal(t, "foo", machine.Name)
+	assert.Equal(t, "my-account", machine.Account)
 	assert.Equal(t, "my-proj", machine.Project)
 	assert.Equal(t, "us-central1-a", machine.Zone)
 
@@ -81,7 +83,7 @@ func TestAdd(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	err = cfg.Add("foo-machine", "my-proj", "us-west1-a", nil)
+	err = cfg.Add("foo-machine", "my-account", "my-proj", "us-west1-a", nil)
 	assert.NoError(t, err)
 	// there should be 1 machine in the config now
 	assert.Equal(t, 1, cfg.Count())
@@ -89,7 +91,7 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, "foo-machine", cfg.GetDefault())
 
 	// adding a machine that already exists in the config should error
-	err = cfg.Add("foo-machine", "my-proj", "us-west1-a", nil)
+	err = cfg.Add("foo-machine", "my-account", "my-proj", "us-west1-a", nil)
 	assert.Error(t, err)
 
 	// read in the saved config file, it should contain the added machine
@@ -106,13 +108,14 @@ func TestGet(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	// Add node
-	err = cfg.Add("foo", "my-proj", "zone1", nil)
+	err = cfg.Add("foo", "my-account", "my-proj", "zone1", nil)
 	assert.NoError(t, err)
 
 	// read it back and verify
 	m, err := cfg.Get("foo")
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", m.Name)
+	assert.Equal(t, "my-account", m.Account)
 	assert.Equal(t, "my-proj", m.Project)
 	assert.Equal(t, "zone1", m.Zone)
 
@@ -129,9 +132,9 @@ func TestDelete(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	// Add 2 nodes
-	err = cfg.Add("foo", "my-proj", "zone1", nil)
+	err = cfg.Add("foo", "my-account", "my-proj", "zone1", nil)
 	assert.NoError(t, err)
-	err = cfg.Add("bar", "my-proj", "zone1", nil)
+	err = cfg.Add("bar", "my-account", "my-proj", "zone1", nil)
 	assert.NoError(t, err)
 
 	// should have 2 nodes
@@ -160,12 +163,12 @@ func TestGetSetDefault(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	// Add 1st node, it should be set as the default automatically
-	err = cfg.Add("foo", "my-proj", "zone1", nil)
+	err = cfg.Add("foo", "my-account", "my-proj", "zone1", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", cfg.GetDefault())
 
 	// add another node and set it as the new default
-	err = cfg.Add("bar", "my-proj", "zone1", nil)
+	err = cfg.Add("bar", "my-account", "my-proj", "zone1", nil)
 	assert.NoError(t, err)
 	err = cfg.SetDefault("bar")
 	assert.NoError(t, err)

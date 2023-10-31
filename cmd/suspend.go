@@ -48,5 +48,12 @@ func suspend(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return gcp.SuspendInstance(cmd.OutOrStdout(), cmd.OutOrStderr(), name, machine.Project, machine.Zone)
+	return gcp.SuspendInstance(
+		cmd.OutOrStdout(),
+		cmd.OutOrStderr(),
+		name,
+		machine.Account,
+		machine.Project,
+		machine.Zone,
+	)
 }

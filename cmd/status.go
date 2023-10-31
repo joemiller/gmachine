@@ -68,15 +68,15 @@ func status(cmd *cobra.Command, args []string) error {
 	print := func(values ...string) {
 		fmt.Fprintln(table, strings.Join(values, "\t"))
 	}
-	print("NAME", "ZONE", "PROJECT", "MACHINE_TYPE", "PREEMPTIBLE", "INTERNAL_IP", "EXTERNAL_IP", "STATUS", "DEFAULT")
+	print("NAME", "ACCOUNT", "PROJECT", "ZONE", "MACHINE_TYPE", "PREEMPTIBLE", "INTERNAL_IP", "EXTERNAL_IP", "STATUS", "DEFAULT")
 
-	// status row for each
+	// status row for each machine
 	for _, name := range names {
 		machine, err := cfg.Get(name)
 		if err != nil {
 			return err
 		}
-		meta, err := gcp.DescribeInstance(name, machine.Project, machine.Zone)
+		meta, err := gcp.DescribeInstance(name, machine.Account, machine.Project, machine.Zone)
 		if err != nil {
 			cmd.PrintErr(err)
 			continue
@@ -84,8 +84,9 @@ func status(cmd *cobra.Command, args []string) error {
 
 		print(
 			name,
-			path.Base(meta.Zone),
+			machine.Account,
 			machine.Project,
+			path.Base(meta.Zone),
 			path.Base(meta.MachineType),
 			fmt.Sprintf("%t", meta.Scheduling.Preemptible),
 			internalIP(meta.NetworkInterfaces),
@@ -101,7 +102,7 @@ func status(cmd *cobra.Command, args []string) error {
 	}
 
 	// TODO: fanout 'describe' calls to a limited size worker pool
-	//       fanin results to table printer.. maybe vault-token-helper has a reusable pattern
+	//       fanin results to table printer.. errgroup
 
 	return nil
 }

@@ -48,5 +48,12 @@ func stop(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return gcp.StopInstance(cmd.OutOrStdout(), cmd.OutOrStderr(), name, machine.Project, machine.Zone)
+	return gcp.StopInstance(
+		cmd.OutOrStdout(),
+		cmd.OutOrStderr(),
+		name,
+		machine.Account,
+		machine.Project,
+		machine.Zone,
+	)
 }

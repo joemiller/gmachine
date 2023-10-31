@@ -23,6 +23,7 @@ type config struct {
 
 type machine struct {
 	Name    string         `yaml:"name"`
+	Account string         `yaml:"account"`
 	Project string         `yaml:"project"`
 	Zone    string         `yaml:"zone"`
 	CSEK    gcp.CSEKBundle `yaml:"csek"`
@@ -98,7 +99,7 @@ func (c *config) Get(name string) (machine, error) {
 // TODO make a thread-safe getter for config.Machines
 
 // TODO document
-func (c *config) Add(name, project, zone string, csek gcp.CSEKBundle) error {
+func (c *config) Add(name, account, project, zone string, csek gcp.CSEKBundle) error {
 	// fail if already exists
 	if c.Exists(name) {
 		return fmt.Errorf("machine '%s' already exists", name)
@@ -111,6 +112,7 @@ func (c *config) Add(name, project, zone string, csek gcp.CSEKBundle) error {
 	// add to config.Machines array
 	m := machine{
 		Name:    name,
+		Account: account,
 		Project: project,
 		Zone:    zone,
 		CSEK:    csek,

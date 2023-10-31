@@ -23,7 +23,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 }
 
-func list(cmd *cobra.Command, args []string) error {
+func list(cmd *cobra.Command, _ []string) error {
 	cfg, err := config.LoadFile(cfgFile)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func list(cmd *cobra.Command, args []string) error {
 			encrypted = true
 		}
 		// TODO print out some kind of indication next to the default machine
-		cmd.Printf("%s (%s, %s, encrypted: %t)\n", m.Name, m.Project, m.Zone, encrypted)
+		cmd.Printf("%s (%s, %s, %s, encrypted: %t)\n", m.Name, m.Account, m.Project, m.Zone, encrypted)
 	}
 	return nil
 }
