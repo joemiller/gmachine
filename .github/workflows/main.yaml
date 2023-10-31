@@ -1,10 +1,5 @@
 name: main
-on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
+on: [push]
 
 # TODO: break this up into separate workflows for a more idiomatic GHA setup. anything that is doing "if branch" is a candidate
 
