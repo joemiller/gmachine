@@ -18,12 +18,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      # - name: install golangci-lint
-      #   run: |
-      #     mkdir -p "$HOME/bin"
-      #     curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b "$HOME/bin"
-      #     echo "$HOME/bin" >> $GITHUB_PATH
-      #   shell: bash # force windows to use git-bash for access to curl
       - uses: golangci/golangci-lint-action@v3
       - name: install goreleaser
         uses: goreleaser/goreleaser-action@v5
@@ -36,8 +30,8 @@ jobs:
 
   release-test:
     needs: [test]
-    # don't waste time running a goreleaser test build on master since we will run a full release:
-    if: github.ref != 'refs/heads/master'
+    # don't waste time running a goreleaser test build on main since we will run a full release:
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -53,8 +47,8 @@ jobs:
 
   release:
     needs: [test]
-    # only create a release on master builds:
-    if: github.ref == 'refs/heads/master'
+    # only create a release on main builds:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

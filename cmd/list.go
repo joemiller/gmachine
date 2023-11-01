@@ -8,12 +8,12 @@ import (
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list-config",
 	Short: "List all cloud machines in the config file",
 	Long:  "List all cloud machines in the config file",
 	Example: indentor.Indent("  ", `
 # list
-gmachine list
+gmachine list-config
 `),
 	SilenceUsage: true,
 	RunE:         list,
@@ -34,7 +34,6 @@ func list(cmd *cobra.Command, _ []string) error {
 		if m.CSEK != nil && len(m.CSEK) > 0 {
 			encrypted = true
 		}
-		// TODO print out some kind of indication next to the default machine
 		cmd.Printf("%s (%s, %s, %s, encrypted: %t)\n", m.Name, m.Account, m.Project, m.Zone, encrypted)
 	}
 	return nil
