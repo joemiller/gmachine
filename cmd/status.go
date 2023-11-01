@@ -51,7 +51,7 @@ func status(cmd *cobra.Command, args []string) error {
 	print := func(values ...string) {
 		fmt.Fprintln(table, strings.Join(values, "\t"))
 	}
-	print("NAME", "ACCOUNT", "PROJECT", "ZONE", "MACHINE_TYPE", "PREEMPTIBLE", "ENCRYPTION", "INTERNAL_IP", "EXTERNAL_IP", "STATUS", "DEFAULT")
+	print("NAME", "ACCOUNT", "PROJECT", "ZONE", "MACHINE_TYPE", "PREEMPTIBLE", "ENCRYPTION", "SERVICE_ACCOUNT", "INTERNAL_IP", "EXTERNAL_IP", "STATUS", "DEFAULT")
 
 	eg := errgroup.Group{}
 	eg.SetLimit(8)
@@ -86,10 +86,17 @@ func status(cmd *cobra.Command, args []string) error {
 				return nil
 			}
 
-			encryptStatus := "false"
+			encryptStatus := ""
 			if len(machine.CSEK) > 0 {
 				encryptStatus = "CSEK"
 			}
+
+			gsa := ""
+			if meta.ServiceAccounts != nil && len(meta.ServiceAccounts) > 0 {
+				// XXX: just the first one. I am not sure you can assign multiple to a VM? if so, probably uncommon
+				gsa = meta.ServiceAccounts[0].Email
+			}
+
 			// TODO: also handle CMEK encryption some day
 
 			outputCh <- []string{
@@ -100,6 +107,7 @@ func status(cmd *cobra.Command, args []string) error {
 				path.Base(meta.MachineType),
 				fmt.Sprintf("%t", meta.Scheduling.Preemptible),
 				encryptStatus,
+				gsa,
 				internalIP(meta.NetworkInterfaces),
 				externalIP(meta.NetworkInterfaces),
 				meta.Status,
