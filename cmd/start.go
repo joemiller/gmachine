@@ -40,7 +40,7 @@ func start(cmd *cobra.Command, args []string) error {
 		name = args[0]
 	}
 	if name == "" {
-		return errors.New("Must specify machine or set a default machine with 'set-default'")
+		return errors.New("must specify machine or set a default machine with 'set-default'")
 	}
 
 	machine, err := cfg.Get(name)
