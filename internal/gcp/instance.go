@@ -279,3 +279,19 @@ func ResizeInstance(log, logerr io.Writer, name, account, project, zone, size st
 	}
 	return run(os.Stdin, log, logerr, args...)
 }
+
+// TODO doc
+func OpenConsole(log, logerr io.Writer, name, project, zone, authuser string) error {
+	// https://console.cloud.google.com/compute/instancesDetail/zones/us-west2-a/instances/joe-amd-dev1?authuser=1&project=planetscale-development
+	url := fmt.Sprintf("https://console.cloud.google.com/compute/instancesDetail/zones/%s/instances/%s?project=%s",
+		zone, name, project,
+	)
+	if authuser != "" {
+		url += "&authuser=" + authuser
+	}
+
+	args := []string{
+		"open", url,
+	}
+	return run(os.Stdin, log, logerr, args...)
+}
